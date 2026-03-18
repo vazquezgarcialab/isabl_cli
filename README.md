@@ -34,8 +34,8 @@ pip install isabl_cli
 
 ```bash
 # Set up your environment variables
-export ISABL_API_URL="http://<your-isabl-instance>/api/v1/"
-export CLIENT_ID="<your-client-id>"
+export ISABL_API_URL="https://<your-isabl-instance>/api/v1/"
+export ISABL_CLIENT_ID="<your-client-id>"
 
 # Authenticate and cache credentials
 isabl login
