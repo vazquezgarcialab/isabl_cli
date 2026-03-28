@@ -406,6 +406,7 @@ class AbstractApplication:  # pylint: disable=too-many-public-methods
                     api.patch_analysis_status(analysis, "STARTED")
                     merge_analyses(analysis, analyses)
                     api.patch_analysis_status(analysis, "SUCCEEDED")
+                    analysis.data["merged_analyses"] = len(analyses)
                 except Exception as e:  # pragma: no cover pylint: disable=W0703
                     error_msg = traceback.format_exc()
                     click.echo(error_msg, file=sys.stderr)
@@ -1159,6 +1160,7 @@ class AbstractApplication:  # pylint: disable=too-many-public-methods
                 app_name (str): `Application.name`.
                 app_version (str): `Application.version`. If not defined, use
                     any available. Use `any` if you want to use the latest available.
+                app_assembly (str): `Application.assembly.name`. i.e: GRCh37
                 linked (bool): if False, the analysis is not linked as a dependencie of
                     the analysis. As adding new dependencies to an analysis forces isabl
                     to not recognize existing ones (Default: True).
@@ -1182,6 +1184,9 @@ class AbstractApplication:  # pylint: disable=too-many-public-methods
                 result_args["application_key"] = dependency.get("app").primary_key
                 result_args["application_name"] = dependency.get("app").NAME
 
+            if "app_assembly" in dependency:
+                result_args["application_assembly"] = dependency.get("app_assembly")
+
             if "status" in dependency:
                 result_args["status"] = dependency["status"]
 
@@ -1200,9 +1205,13 @@ class AbstractApplication:  # pylint: disable=too-many-public-methods
         for name, result_specification in specification.items():
             pattern = result_specification.get("pattern")
             exclude = result_specification.get("exclude")
+            optional = result_specification.get("optional")
             if pattern:
                 results[name] = utils.first_matching_file(
-                    analysis.storage_url, pattern, exclude
+                    directory=analysis.storage_url,
+                    pattern=pattern,
+                    exclude=exclude,
+                    optional=optional,
                 )
         return results
 
@@ -1234,6 +1243,15 @@ class AbstractApplication:  # pylint: disable=too-many-public-methods
 
         for i in specification:
             assert i in results, f"Missing expected result {i} in: {results}"
+
+        # update bam with result if specified
+        for key, attributes in specification.items():
+            if attributes.get("store_as_bam") and results[key]:
+                self.update_experiment_bam_file(
+                    experiment=analysis["targets"][0],
+                    bam_url=results[key],
+                    analysis_pk=analysis["pk"],
+                )
 
         return results
 
@@ -1527,7 +1545,6 @@ class AbstractApplication:  # pylint: disable=too-many-public-methods
         # validate existing analyses
         with click.progressbar(
             existing_analyses,
-            file=sys.stderr,
             label=f"Validating tuples of the {len(existing_analyses)} existing analyses...\t\t",
         ) as bar:
             for i in bar:
@@ -1543,7 +1560,6 @@ class AbstractApplication:  # pylint: disable=too-many-public-methods
         # create new analyses and validate
         with click.progressbar(
             valid_tuples,
-            file=sys.stderr,
             label=f"Creating analyses for {len(valid_tuples)} tuples...\t\t",
         ) as bar:
             for i in bar:
@@ -1585,7 +1601,7 @@ class AbstractApplication:  # pylint: disable=too-many-public-methods
         if not tuples:  # pragma: no cover
             return [], []
 
-        click.echo("Checking for existing analyses...", file=sys.stderr)
+        click.echo("Checking for existing analyses...")
         projects = {j["pk"] for i in tuples for j in i[0][0]["projects"]}
         cache = defaultdict(list)
         existing, missing = [], []
