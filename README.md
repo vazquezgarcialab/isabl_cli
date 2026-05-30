@@ -4,8 +4,12 @@
 [![pypi badge][pypi_badge]][pypi_base]
 [![codecov badge][codecov_badge]][codecov_base]
 [![code formatting][black_badge]][black_base]
+[![MCP][mcp_badge]][mcp_base]
 
 > **_Terms of Use: Academic Research_**
+
+> [!TIP]
+> Talk to your genomics data with AI. Try the [Isabl MCP Server](https://github.com/juanesarango/isabl-mcp) with Claude Code, Cursor, or your favorite agentic tool.
 
 `isabl_cli` is a command line client and SDK for the Isabl Platform infrastructure.
 
@@ -164,3 +168,5 @@ Isabl was created at [Elli Papaemmanuil's lab].
 [pypi_base]: https://pypi.python.org/pypi/isabl_cli
 [gh_actions_badge]: https://github.com/papaemmelab/isabl_cli/actions/workflows/run-test.yaml/badge.svg
 [gh_actions_base]: https://github.com/papaemmelab/isabl_cli/actions/workflows/run-test.yaml
+[mcp_badge]: https://img.shields.io/badge/MCP-compatible-blue
+[mcp_base]: https://github.com/juanesarango/isabl-mcp
