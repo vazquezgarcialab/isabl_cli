@@ -152,9 +152,22 @@ def submit_slurm_array(
                     if unbuffer else f"bash {command}"
                 )
 
+                # Preload Apptainer via Lmod so any bare `apptainer`/`singularity`
+                # call inside head_job.sh works without every app needing to
+                # `module load` explicitly (papaemme's code assumes docker in
+                # PATH; on eristwo apptainer is behind Lmod). The child shell
+                # started by `bash head_job.sh` inherits the augmented PATH.
+                # Failures are silenced so this stays a no-op on clusters
+                # where Lmod or the module aren't present.
+                apptainer_preload = (
+                    "source /etc/profile.d/z00_lmod.sh 2>/dev/null || true; "
+                    "module load Apptainer/1.4.2-1.el9 2>/dev/null || true; "
+                )
+
                 # use random sleep to avoid parallel API hits
                 f.write(
                     f"#!/bin/bash\n\n"
+                    f"{apptainer_preload}\n"
                     f"sleep {random.uniform(0, 10):.3f} && "
                     f"echo {dependency} >> {command.replace('head_job.sh', 'job_ids.txt')} && "
                     f"({after_not_ok_job}) && {run_cmd}"
